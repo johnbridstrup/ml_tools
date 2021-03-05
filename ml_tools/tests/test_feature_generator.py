@@ -1,6 +1,6 @@
 import pytest
 
-from ml_tools import FeatureGenerator, Hour, SimpleAggregator
+from ml_tools import FeatureGenerator, Hour, SimpleAggregator, custom_generator, SingleAggregator
 import pandas as pd
 
 
@@ -42,6 +42,16 @@ def test_hour_columns(timestamps):
     assert new_feature.equals(df_comp)
 
 
+def test_custom_feature_generator(user_test_func, single_dataset):
+    usr_func = user_test_func
+    df = single_dataset
+    test_generator = custom_generator(usr_func)
+
+    new_feature = test_generator.generate_feature(df)
+
+    assert new_feature.equals(df)
+
+
 def test_simple_aggregator_init(multi_dataset):
     df1, df2 = multi_dataset
 
@@ -67,6 +77,8 @@ def test_simple_define_relationship(multi_dataset):
     test_agg = SimpleAggregator(df1, df2, rkey1='type', rkey2='type')
 
     assert test_agg.relationships == "\n RELATIONSHIPS:\ndata1.type -> data2.type\n"
+    assert test_agg._rkey1 == "type"
+    assert test_agg._rkey2 == "type"
 
 
 def test_new_relationship(multi_dataset):
@@ -76,6 +88,8 @@ def test_new_relationship(multi_dataset):
     test_agg.new_relationship('type', 'type')
 
     assert test_agg.relationships == "\n RELATIONSHIPS:\ndata1.type -> data2.type\n"
+    assert test_agg._rkey1 == "type"
+    assert test_agg._rkey2 == "type"
 
 
 def test_simple_agg(multi_dataset):
@@ -89,3 +103,16 @@ def test_simple_agg(multi_dataset):
     test_feauture = test_agg.aggregate()
 
     assert test_feauture.equals(df_comp)
+
+
+def test_single_agg(single_dataset):
+    df = single_dataset
+
+    df_comp = pd.DataFrame({'animal': ["dog", "cat", "monkey"],
+                            'count': [1, 1, 1]})
+
+    test_agg = SingleAggregator(df, rkey1='animal')
+
+    test_feature = test_agg.aggregate().copy()
+
+    assert test_feature.equals(df_comp)

@@ -27,3 +27,10 @@ def timestamps():
     dt = pd.date_range("2018-01-01", periods=5, freq="H")
     df = pd.DataFrame({'timestamp': dt, "numbers": range(len(dt))})
     return df
+
+
+@pytest.fixture
+def user_test_func():
+    def t_func(data, column):
+        return data
+    return t_func
