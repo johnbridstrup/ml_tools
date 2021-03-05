@@ -1,0 +1,14 @@
+fraud:
+    id: Primary Key
+    card_id: Categorical
+    store_id: Categorical
+    datetime: Datetime
+    amount: Numeric
+    currency: Categorical
+    customer_present: Boolean
+    provider: Categorical
+    lat: Numeric
+    lng: Numeric
+    region: Categorical
+    country: Categorical
+    fraud: Boolean

@@ -1,0 +1,4 @@
+Relationships (one to many):
+    - transactions['product_id'] -> products['product_id']
+    - transactions['session_id'] -> sessions['session_id']
+    - sessions['customer_id'] -> customers['customer_id']
