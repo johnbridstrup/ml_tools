@@ -1,6 +1,6 @@
 import pytest
 
-from ml_tools import FeatureGenerator, Hour, SimpleAggregator, custom_generator, SingleAggregator
+from ml_tools import FeatureGenerator, Hour, SimpleAggregator, custom_generator, SingleAggregator, Average
 import pandas as pd
 
 
@@ -116,3 +116,10 @@ def test_single_agg(single_dataset):
     test_feature = test_agg.aggregate().copy()
 
     assert test_feature.equals(df_comp)
+
+
+def test_average(test_dataset):
+    df = test_dataset
+
+
+    agg = Average(df, "species")

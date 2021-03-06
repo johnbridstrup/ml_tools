@@ -125,3 +125,32 @@ class SimpleAggregator(Aggregator):
 
     def generate_feature(self, data, column=None, **kwargs):
         raise NotImplementedError("This aggregator doesn't generate new features")
+
+
+class Average(Aggregator):
+
+    def __init__(self, data, key, label=None):
+        super().__init__(data, data2="NONE", label1=label, rkey1=key, rkey2="NONE")
+
+    def generate_feature(self, data, column=None, **kwargs):
+        pass
+
+    def aggregate(self):
+        out_df = pd.DataFrame(self._data[self._label1][self._rkey1].value_counts()).reset_index()
+        cols = [self._rkey1, 'count']
+        out_df.columns = cols
+        elements = out_df[self._rkey1]
+
+        avgs = []
+        for el in list(elements):
+            agg_data = self._data[self._label1].loc[self._data[self._label1][self._rkey1] == el]
+            x = [el]
+            x.extend([agg_data[col].mean() for col in agg_data if col != self._rkey1])
+            avgs.append(x)
+        new_cols = [self._rkey1]
+        new_cols.extend([col+'_avg' for col in self._data[self._label1] if col != self._rkey1])
+        avgs = pd.DataFrame(avgs)
+        avgs.columns = new_cols
+
+        out_df = pd.merge(out_df, avgs, on=self._rkey1)
+        return out_df

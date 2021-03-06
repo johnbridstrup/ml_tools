@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-
+import seaborn as sns
 
 @pytest.fixture
 def single_dataset():
@@ -34,3 +34,9 @@ def user_test_func():
     def t_func(data, column):
         return data
     return t_func
+
+
+@pytest.fixture
+def test_dataset():
+    iris = sns.load_dataset('iris')
+    return iris
