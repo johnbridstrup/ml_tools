@@ -100,9 +100,9 @@ def test_simple_agg(multi_dataset):
 
     test_agg = SimpleAggregator(df1, df2, rkey1='type', rkey2='type')
 
-    test_feauture = test_agg.aggregate()
+    test_feature = test_agg.aggregate()
 
-    assert test_feauture.equals(df_comp)
+    assert test_feature.equals(df_comp)
 
 
 def test_single_agg(single_dataset):
@@ -114,8 +114,11 @@ def test_single_agg(single_dataset):
     test_agg = SingleAggregator(df, rkey1='animal')
 
     test_feature = test_agg.aggregate().copy()
+    
+    test_sorted = test_feature.sort_values(by='animal', ignore_index=True)
+    df_comp_sorted = df_comp.sort_values(by='animal', ignore_index=True)
 
-    assert test_feature.equals(df_comp)
+    assert test_sorted.equals(df_comp_sorted)
 
 
 def test_average(test_dataset):
