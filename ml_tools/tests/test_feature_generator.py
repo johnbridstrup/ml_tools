@@ -114,7 +114,7 @@ def test_single_agg(single_dataset):
     test_agg = SingleAggregator(df, rkey1='animal')
 
     test_feature = test_agg.aggregate().copy()
-    
+
     test_sorted = test_feature.sort_values(by='animal', ignore_index=True)
     df_comp_sorted = df_comp.sort_values(by='animal', ignore_index=True)
 
