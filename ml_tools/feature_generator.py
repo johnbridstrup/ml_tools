@@ -154,3 +154,8 @@ class Average(Aggregator):
 
         out_df = pd.merge(out_df, avgs, on=self._rkey1)
         return out_df
+
+#
+# class MaxMin(Aggregator):
+#     def __init__(self, data, key, label=None):
+#         super().__init__(data, data2="NONE", label1=label, rkey1=key, rkey2="NONE")

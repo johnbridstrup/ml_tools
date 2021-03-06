@@ -124,5 +124,26 @@ def test_single_agg(single_dataset):
 def test_average(test_dataset):
     df = test_dataset
 
+    df_comp = pd.DataFrame(df['species'].value_counts()).reset_index()
+    cols = ['species', 'count']
+    df_comp.columns = cols
+    elements = df_comp['species']
+
+    avgs = []
+    for el in list(elements):
+        agg_data = df.loc[df['species'] == el]
+        x = [el]
+        x.extend([agg_data[col].mean() for col in agg_data if col != 'species'])
+        avgs.append(x)
+    new_cols = ['species']
+    new_cols.extend([col+'_avg' for col in df if col != 'species'])
+    avgs = pd.DataFrame(avgs)
+    avgs.columns = new_cols
+
+    df_comp = pd.merge(df_comp, avgs, on='species')
 
     agg = Average(df, "species")
+
+    df_avg = agg.aggregate()
+
+    assert df_avg.equals(df_comp)
