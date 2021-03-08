@@ -45,7 +45,12 @@ def test_hour_columns(timestamps):
 def test_custom_feature_generator(user_test_func, single_dataset):
     usr_func = user_test_func
     df = single_dataset
-    test_generator = custom_generator(usr_func)
+    name = 'test_func'
+    feature_type = 'test_type'
+    test_generator = custom_generator(usr_func, name, feature_type)
+
+    assert test_generator.name == name
+    assert test_generator.feature_type == feature_type
 
     new_feature = test_generator.generate_feature(df)
 
