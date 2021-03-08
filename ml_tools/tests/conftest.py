@@ -30,6 +30,12 @@ def timestamps():
 
 
 @pytest.fixture
+def zipcodes():
+    df = pd.DataFrame({'zip_code': [90293, 20186]})
+    return df
+
+
+@pytest.fixture
 def user_test_func():
     def t_func(data, column):
         return data

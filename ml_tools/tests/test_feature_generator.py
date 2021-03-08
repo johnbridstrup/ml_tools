@@ -1,6 +1,14 @@
 import pytest
+from uszipcode import SearchEngine
 
-from ml_tools import FeatureGenerator, Hour, SimpleAggregator, custom_generator, SingleAggregator, Average
+from ml_tools import FeatureGenerator, \
+    Hour, \
+    SimpleAggregator, \
+    custom_generator, \
+    SingleAggregator, \
+    Average, \
+    DateTimeInfo, \
+    ZipCodeInfo
 import pandas as pd
 
 
@@ -40,6 +48,41 @@ def test_hour_columns(timestamps):
     new_feature = Hour.generate_feature(df, column='timestamp')
 
     assert new_feature.equals(df_comp)
+
+
+def test_split_timestamp(timestamps):
+    df = timestamps
+    split_time = DateTimeInfo.generate_feature(df.copy(), 'timestamp')
+
+    assert all([d1.year == d2 for d1, d2 in zip(df['timestamp'], split_time['timestamp_year'])])
+    assert all([d1.month == d2 for d1, d2 in zip(df['timestamp'], split_time['timestamp_month'])])
+    assert all([d1.day == d2 for d1, d2 in zip(df['timestamp'], split_time['timestamp_day'])])
+    assert all([d1.weekday() == d2 for d1, d2 in zip(df['timestamp'], split_time['timestamp_weekday'])])
+    assert all([d1 == d2 for d1, d2 in zip(df['timestamp'].dt.time, split_time['timestamp_time'])])
+
+
+def test_zipcode_info(zipcodes):
+    df = zipcodes
+    df_comp = df.copy()
+
+    searcher = SearchEngine(simple_zipcode=True)
+    df_comp['county'] = ''
+    df_comp['city'] = ''
+    df_comp['lat'] = ''
+    df_comp['lng'] = ''
+
+    for zipcode in df_comp['zip_code'].unique():
+        zip_search = searcher.by_zipcode(zipcode)
+        df_comp.loc[df_comp['zip_code'] == zipcode, 'city'] = zip_search.major_city
+        df_comp.loc[df_comp['zip_code'] == zipcode, 'county'] = zip_search.county
+        df_comp.loc[df_comp['zip_code'] == zipcode, 'lat'] = zip_search.lat
+        df_comp.loc[df_comp['zip_code'] == zipcode, 'lng'] = zip_search.lng
+
+    zip_info = ZipCodeInfo.generate_feature(df, 'zip_code')
+
+    assert zip_info.equals(df_comp)
+
+
 
 
 def test_custom_feature_generator(user_test_func, single_dataset):
@@ -141,7 +184,7 @@ def test_average(test_dataset):
         x.extend([agg_data[col].mean() for col in agg_data if col != 'species'])
         avgs.append(x)
     new_cols = ['species']
-    new_cols.extend([col+'_avg' for col in df if col != 'species'])
+    new_cols.extend([col + '_avg' for col in df if col != 'species'])
     avgs = pd.DataFrame(avgs)
     avgs.columns = new_cols
 

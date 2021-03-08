@@ -1,6 +1,6 @@
 import pandas as pd
+from uszipcode import SearchEngine
 from abc import ABC, abstractmethod
-
 
 """Module for generating, transforming and aggregating features of datasets
 
@@ -46,6 +46,7 @@ class FeatureGenerator(ABC):
 
 class Hour(FeatureGenerator):
     """Transforms datetime data to hour of the day"""
+
     @property
     def name(self):
         return 'Hour'
@@ -61,17 +62,108 @@ class Hour(FeatureGenerator):
         Converts all datetime data to hours or, if given a column, converts a single column to hours
         """
         if column is None:
+            object_cols = [col for col, col_type in data.dtypes.iteritems() if col_type == 'object']
+
+            for col in object_cols:
+                data[col] = pd.to_datetime(data[col], errors='ignore')
+
             types = data.dtypes
             ts_indices = [idx for idx, t in enumerate(list(types)) if t == "datetime64[ns]"]
-            print(ts_indices)
             for idx in ts_indices:
                 for index, time in data.iloc[:, idx].iteritems():
                     data.iloc[:, idx][index] = time.hour
             return data
         else:
-            for index, time in data[column].iteritems():  # No idea why i need iteritems here but not in the other loop
-                data[column][index] = time.hour
+            try:
+                for index, time in data[
+                    column].iteritems():  # No idea why i need iteritems here but not in the other loop
+                    data[column][index] = time.hour
+            except AttributeError:
+                data[column] = pd.to_datetime(data[column])
+                for index, time in data[
+                    column].iteritems():  # No idea why i need iteritems here but not in the other loop
+                    data[column][index] = time.hour
             return data
+
+
+class DateTimeInfo(FeatureGenerator):
+    """Split datetime information into multiple features"""
+
+    @property
+    def name(self):
+        return 'datetime_info'
+
+    @property
+    def feature_type(self):
+        return 'generation'
+
+    @classmethod
+    def generate_feature(cls, data, column=None, **kwargs):
+        """Splits a timestamp into year, month, day, weekday and time of day
+
+        :param data: dataframe
+        :param column: column with timestamps to be split
+        :param kwargs: ignored
+        :return: dataframe with split column dropped and new columns added
+        """
+        if column is None:
+            raise ValueError('timestamp column must be given')
+        try:
+            data[f'{column}_year'] = [d.year for d in data[column]]
+            data[f'{column}_month'] = [d.month for d in data[column]]
+            data[f'{column}_day'] = [d.day for d in data[column]]
+            data[f'{column}_weekday'] = [d.weekday() for d in data[column]]
+            data[f'{column}_time'] = data[column].dt.time
+            data = data.drop([column], axis=1)
+        except AttributeError:
+            data[column] = pd.to_datetime(data[column])
+            data[f'{column}_year'] = [d.year for d in data[column]]
+            data[f'{column}_month'] = [d.month for d in data[column]]
+            data[f'{column}_day'] = [d.day for d in data[column]]
+            data[f'{column}_weekday'] = [d.weekday() for d in data[column]]
+            data[f'{column}_time'] = data[column].dt.time
+            data = data.drop([column], axis=1)
+        return data
+
+
+class ZipCodeInfo(FeatureGenerator):
+    """Generates new features from a zipcode"""
+
+    @property
+    def name(self):
+        return 'zipcode_info'
+
+    @property
+    def feature_type(self):
+        return 'generation'
+
+    @classmethod
+    def generate_feature(cls, data, column=None, **kwargs):
+        """
+
+        :param data: dataframe containing zip codes
+        :param column: column label containing zip codes
+        :param kwargs: ignored
+        :return: dataframe with new columns for county, city, latitude and longitude
+        """
+
+        if column is None:
+            raise ValueError('zipcode column must be given')
+
+        zip_searcher = SearchEngine(simple_zipcode=True)
+        data['county'] = ''
+        data['city'] = ''
+        data['lat'] = ''
+        data['lng'] = ''
+
+        for zipcode in data[column].unique():
+            zip_search = zip_searcher.by_zipcode(zipcode)
+            data.loc[data[column] == zipcode, 'city'] = zip_search.major_city
+            data.loc[data[column] == zipcode, 'county'] = zip_search.county
+            data.loc[data[column] == zipcode, 'lat'] = zip_search.lat
+            data.loc[data[column] == zipcode, 'lng'] = zip_search.lng
+
+        return data
 
 
 def custom_generator(user_func, name='custom_feature', feature_type='custom_feature_type'):
@@ -82,6 +174,7 @@ def custom_generator(user_func, name='custom_feature', feature_type='custom_feat
     :param feature_type: returned feature type
     :return: Instantiated FeatureGenerator implementation
     """
+
     class CustomGenerator(FeatureGenerator):
         @property
         def name(self):
@@ -106,6 +199,7 @@ class Aggregator(ABC):
         relationships: relationship or column aggregation is performed over (string)
 
     """
+
     def __init__(self, data1, data2=None, rkey1=None, rkey2=None, label1='data1', label2='data2'):
         """
 
@@ -168,6 +262,7 @@ class Aggregator(ABC):
 
 class SingleAggregator(Aggregator):
     """Counts occurrences of each unique value in a given column"""
+
     def __init__(self, data, label=None, rkey1=None):
         """
 
@@ -241,7 +336,7 @@ class Average(Aggregator):
             x.extend([agg_data[col].mean() for col in agg_data if col != self._rkey1])
             avgs.append(x)
         new_cols = [self._rkey1]
-        new_cols.extend([col+'_avg' for col in self._data[self._label1] if col != self._rkey1])
+        new_cols.extend([col + '_avg' for col in self._data[self._label1] if col != self._rkey1])
         avgs = pd.DataFrame(avgs)
         avgs.columns = new_cols
 
