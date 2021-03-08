@@ -66,10 +66,12 @@ def test_zipcode_info(zipcodes):
     df_comp = df.copy()
 
     searcher = SearchEngine(simple_zipcode=True)
+    df_comp['state'] = ''
     df_comp['county'] = ''
     df_comp['city'] = ''
     df_comp['lat'] = ''
     df_comp['lng'] = ''
+    df_comp['timezone'] = ''
 
     for zipcode in df_comp['zip_code'].unique():
         zip_search = searcher.by_zipcode(zipcode)
@@ -77,6 +79,8 @@ def test_zipcode_info(zipcodes):
         df_comp.loc[df_comp['zip_code'] == zipcode, 'county'] = zip_search.county
         df_comp.loc[df_comp['zip_code'] == zipcode, 'lat'] = zip_search.lat
         df_comp.loc[df_comp['zip_code'] == zipcode, 'lng'] = zip_search.lng
+        df_comp.loc[df_comp['zip_code'] == zipcode, 'state'] = zip_search.state
+        df_comp.loc[df_comp['zip_code'] == zipcode, 'timezone'] = zip_search.timezone
 
     zip_info = ZipCodeInfo.generate_feature(df, 'zip_code')
 

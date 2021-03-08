@@ -151,10 +151,12 @@ class ZipCodeInfo(FeatureGenerator):
             raise ValueError('zipcode column must be given')
 
         zip_searcher = SearchEngine(simple_zipcode=True)
+        data['state'] = ''
         data['county'] = ''
         data['city'] = ''
         data['lat'] = ''
         data['lng'] = ''
+        data['timezone'] = ''
 
         for zipcode in data[column].unique():
             zip_search = zip_searcher.by_zipcode(zipcode)
@@ -162,6 +164,11 @@ class ZipCodeInfo(FeatureGenerator):
             data.loc[data[column] == zipcode, 'county'] = zip_search.county
             data.loc[data[column] == zipcode, 'lat'] = zip_search.lat
             data.loc[data[column] == zipcode, 'lng'] = zip_search.lng
+            data.loc[data[column] == zipcode, 'state'] = zip_search.state
+            data.loc[data[column] == zipcode, 'timezone'] = zip_search.timezone
+
+
+
 
         return data
 
