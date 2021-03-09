@@ -20,6 +20,14 @@ incorporated into the API.
 """
 
 
+class classproperty(object):
+    def __init__(self, getter):
+        self.getter = getter
+
+    def __get__(self, instance, owner):
+        return self.getter(owner)
+
+
 class FeatureGenerator(ABC):
     """Abstract base class for all feature generators and transformers
 
@@ -28,11 +36,11 @@ class FeatureGenerator(ABC):
         feature_type: type of feature being generated (string)
     """
 
-    @property
+    @classproperty
     def name(self):
         raise NotImplementedError('Name property is not implemented')
 
-    @property
+    @classproperty
     def feature_type(self):
         raise NotImplementedError('feature_type property is not implemented')
 
@@ -41,9 +49,12 @@ class FeatureGenerator(ABC):
         """Abstract method for creating and transforming features
 
         :param data: Pandas dataframe
+        :type data: pandas.DataFrame
         :param column: Column on which to perform operation
+        :type column: str
         :param kwargs: additional parameters for specific implementations
         :return: Pandas dataframe with new or transformed features
+        :rtype: pandas.DataFrame
         """
         pass
 
@@ -51,24 +62,24 @@ class FeatureGenerator(ABC):
 class Hour(FeatureGenerator):
     """Transforms datetime data to hour of the day"""
 
-    @property
+    @classproperty
     def name(self):
         return 'Hour'
 
-    @property
+    @classproperty
     def feature_type(self):
         return 'transformation'
 
     @classmethod
     def generate_feature(cls, data, column=None, **kwargs):
-        """Implements generate feature
-
-        Converts all datetime data to hours or, if given a column, converts a single column to hours
+        """Converts all datetime data to hours or, if given a column, converts a single column to hours
 
         :param data: input dataframe
+        :type data: pandas.DataFrame
         :param column: column with timestamp data
-        :param kwargs: ignored
+        :type column: str
         :return: dataframe with timestamps converted to hours
+        :rtype: pandas.DataFrame
         """
         if column is None:
             object_cols = [col for col, col_type in data.dtypes.iteritems() if col_type == 'object']
@@ -97,11 +108,11 @@ class Hour(FeatureGenerator):
 class DateTimeInfo(FeatureGenerator):
     """Split timestamps into multiple features"""
 
-    @property
+    @classproperty
     def name(self):
         return 'datetime_info'
 
-    @property
+    @classproperty
     def feature_type(self):
         return 'generation'
 
@@ -110,9 +121,11 @@ class DateTimeInfo(FeatureGenerator):
         """Splits a timestamp into year, month, day, weekday and time of day
 
         :param data: dataframe
+        :type data: pandas.DataFrame
         :param column: column with timestamps to be split
-        :param kwargs: ignored
+        :type column: str
         :return: dataframe with split column dropped and new columns added
+        :rtype: pandas.DataFrame
         """
         if column is None:
             raise ValueError('timestamp column must be given')
@@ -140,11 +153,11 @@ class ZipCodeInfo(FeatureGenerator):
     Searches zip codes and creates columns for state, county, city, latitude, longitude and time zone
     """
 
-    @property
+    @classproperty
     def name(self):
         return 'zipcode_info'
 
-    @property
+    @classproperty
     def feature_type(self):
         return 'generation'
 
@@ -153,9 +166,11 @@ class ZipCodeInfo(FeatureGenerator):
         """
 
         :param data: dataframe containing zip codes
+        :type data: pandas.DataFrame
         :param column: column label containing zip codes
-        :param kwargs: ignored
+        :type column: str
         :return: dataframe with new columns for state, county, city, latitude, longitude and time zone
+        :rtype: pandas.DataFrame
         """
 
         if column is None:
@@ -178,9 +193,6 @@ class ZipCodeInfo(FeatureGenerator):
             data.loc[data[column] == zipcode, 'state'] = zip_search.state
             data.loc[data[column] == zipcode, 'timezone'] = zip_search.timezone
 
-
-
-
         return data
 
 
@@ -188,17 +200,21 @@ def custom_generator(user_func, name='custom_feature', feature_type='custom_feat
     """Function for creating feature generators from user implemented funtions
 
     :param user_func: transformation or generation function written by user
+    :type user_func: func
     :param name: name of operation
+    :type name: str
     :param feature_type: returned feature type
-    :return: Instantiated FeatureGenerator implementation
+    :type feature_type: str
+    :return: FeatureGenerator instance
+    :rtype: FeatureGenerator
     """
 
     class CustomGenerator(FeatureGenerator):
-        @property
+        @classproperty
         def name(self):
             return name
 
-        @property
+        @classproperty
         def feature_type(self):
             return feature_type
 
@@ -222,11 +238,17 @@ class Aggregator(ABC):
         """
 
         :param data1: dataframe to be aggregated
+        :type data1: pandas.DataFrame
         :param data2: dataframe with a one to many relationship to data1
+        :type data2: pandas.DataFrame
         :param rkey1: key of data1 with which to aggregate over
+        :type rkey1: str
         :param rkey2: key of data2 that is related to data1.rkey1
+        :type rkey2: str
         :param label1: name of data1
+        :type label1: str
         :param label2: name of data2
+        :type label2: str
         """
         self._data = {label1: data1}
         self._label1 = label1
@@ -251,6 +273,7 @@ class Aggregator(ABC):
         String will be of the form: data1.rkey1 -> data2.rkey2
 
         :return: Relationship between data1 and data2
+        :rtype: str
         """
         relationships = "\n RELATIONSHIPS:\n"
         for key, rel in self._relationships.items():
@@ -272,7 +295,13 @@ class Aggregator(ABC):
         pass
 
     def new_relationship(self, rkey1, rkey2):
-        """Defines the relationship between data1 and data2"""
+        """Defines the relationship between data1 and data2
+
+        :param rkey1: key for data1
+        :type rkey1: str
+        :param rkey2: key for data2
+        :type rkey2: str
+        """
         self._relationships[rkey1] = rkey2
         self._rkey1 = rkey1
         self._rkey2 = rkey2
@@ -285,13 +314,20 @@ class SingleAggregator(Aggregator):
         """
 
         :param data: data to be aggregated
+        :type data: pandas.DataFrame
         :param label: name of the dataset
+        :type label: str
         :param rkey1: column to aggregate over
+        :type rkey1: str
         """
         super().__init__(data, data2="NONE", label1=label, rkey1=rkey1, rkey2="NONE")
 
     def aggregate(self):
-        """Counts occurrences of each unique value in given column"""
+        """Counts occurrences of each unique value in given column
+
+        :return: new dataframe with counts of occurrences
+        :rtype: pandas.DataFrame
+        """
         out_df = pd.DataFrame(self._data[self._label1][self._rkey1].value_counts()).reset_index()
         out_df.columns = [self._rkey1, 'count']
         return out_df
@@ -309,6 +345,7 @@ class SimpleAggregator(Aggregator):
         Gets unique values from data2.rkey2 and counts their occurrences in data1.rkey1
 
         :return: dataframe with unique values from data2.rkey2 and their count in data1.rkey1
+        :rtype: pandas.DataFrame
         """
         rel_values = self._data[self._label2][self._rkey2].unique()
 
@@ -332,8 +369,11 @@ class Average(Aggregator):
         """Initializes aggregator with super()
 
         :param data: data to be aggregated
+        :type data: pandas.DataFrame
         :param key: column to aggregate data over
+        :type key: str
         :param label: name of dataset
+        :type label: str
         """
         super().__init__(data, data2="NONE", label1=label, rkey1=key, rkey2="NONE")
 
@@ -341,6 +381,7 @@ class Average(Aggregator):
         """Performs aggregation
 
         :return: dataframe with the averages of each column over the repeated occurrences in key column
+        :rtype: pandas.DataFrame
         """
         out_df = pd.DataFrame(self._data[self._label1][self._rkey1].value_counts()).reset_index()
         cols = [self._rkey1, 'count']

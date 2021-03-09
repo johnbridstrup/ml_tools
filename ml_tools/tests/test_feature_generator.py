@@ -18,14 +18,6 @@ def test_not_implemented():
         FeatureGenerator()
 
 
-# def test_feature_generator_init(single_dataset):
-#     df = single_dataset
-#
-#     test_feature = GenericGenerator(df)
-#
-#     assert test_feature._data.equals(df)
-
-
 def test_hour(timestamps):
     df = timestamps
     df_comp = df
@@ -36,6 +28,8 @@ def test_hour(timestamps):
     new_feature = Hour.generate_feature(df)
 
     assert new_feature.equals(df_comp)
+    assert Hour.name == 'Hour'
+    assert Hour.feature_type == 'transformation'
 
 
 def test_hour_columns(timestamps):
@@ -59,6 +53,15 @@ def test_split_timestamp(timestamps):
     assert all([d1.day == d2 for d1, d2 in zip(df['timestamp'], split_time['timestamp_day'])])
     assert all([d1.weekday() == d2 for d1, d2 in zip(df['timestamp'], split_time['timestamp_weekday'])])
     assert all([d1 == d2 for d1, d2 in zip(df['timestamp'].dt.time, split_time['timestamp_time'])])
+    assert DateTimeInfo.name == 'datetime_info'
+    assert DateTimeInfo.feature_type == 'generation'
+
+
+def test_split_timestamp_no_col(timestamps):
+    df = timestamps
+
+    with pytest.raises(ValueError, match='timestamp column must be given'):
+        DateTimeInfo.generate_feature(df.copy())
 
 
 def test_zipcode_info(zipcodes):
@@ -85,8 +88,15 @@ def test_zipcode_info(zipcodes):
     zip_info = ZipCodeInfo.generate_feature(df, 'zip_code')
 
     assert zip_info.equals(df_comp)
+    assert ZipCodeInfo.name == 'zipcode_info'
+    assert ZipCodeInfo.feature_type == 'generation'
 
 
+def test_zipcode_info_no_col(zipcodes):
+    df = zipcodes
+
+    with pytest.raises(ValueError, match='zipcode column must be given'):
+        ZipCodeInfo.generate_feature(df)
 
 
 def test_custom_feature_generator(user_test_func, single_dataset):
@@ -131,6 +141,14 @@ def test_simple_define_relationship(multi_dataset):
     assert test_agg.relationships == "\n RELATIONSHIPS:\ndata1.type -> data2.type\n"
     assert test_agg._rkey1 == "type"
     assert test_agg._rkey2 == "type"
+
+
+def test_simple_define_relationship_errors(multi_dataset):
+    df1, df2 = multi_dataset
+    with pytest.raises(KeyError, match="need both keys for a relationship"):
+        SimpleAggregator(df1, df2, rkey1='type')
+    with pytest.raises(KeyError, match="need multiple dataframes to define the relationship"):
+        SimpleAggregator(df1, rkey1='type', rkey2='type')
 
 
 def test_new_relationship(multi_dataset):
