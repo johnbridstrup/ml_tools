@@ -2,8 +2,12 @@ import pandas as pd
 from uszipcode import SearchEngine
 from abc import ABC, abstractmethod
 
-"""Module for generating, transforming and aggregating features of datasets
-
+"""Module for generating, transforming and aggregating features of datasets.
+  
+The ml_tools module is a tool for transforming, aggregating and generating new features from existing features
+in input datasets. Users can use built in generators or define their own generating functions and have them
+incorporated into the API. 
+  
   Typical usage examples:
 
   feature_generator = GeneratorClass()
@@ -11,6 +15,8 @@ from abc import ABC, abstractmethod
   
   data_aggregator = AggregatorClass(data, relationship key)
   aggregated_data = data_aggregator.aggregate()
+  
+  user_defined_generator = custom_generator(user_defined_function)
 """
 
 
@@ -33,8 +39,6 @@ class FeatureGenerator(ABC):
     @abstractmethod
     def generate_feature(self, data, column=None, **kwargs):
         """Abstract method for creating and transforming features
-
-
 
         :param data: Pandas dataframe
         :param column: Column on which to perform operation
@@ -60,6 +64,11 @@ class Hour(FeatureGenerator):
         """Implements generate feature
 
         Converts all datetime data to hours or, if given a column, converts a single column to hours
+
+        :param data: input dataframe
+        :param column: column with timestamp data
+        :param kwargs: ignored
+        :return: dataframe with timestamps converted to hours
         """
         if column is None:
             object_cols = [col for col, col_type in data.dtypes.iteritems() if col_type == 'object']
@@ -75,8 +84,7 @@ class Hour(FeatureGenerator):
             return data
         else:
             try:
-                for index, time in data[
-                    column].iteritems():  # No idea why i need iteritems here but not in the other loop
+                for index, time in data[column].iteritems():
                     data[column][index] = time.hour
             except AttributeError:
                 data[column] = pd.to_datetime(data[column])
@@ -87,7 +95,7 @@ class Hour(FeatureGenerator):
 
 
 class DateTimeInfo(FeatureGenerator):
-    """Split datetime information into multiple features"""
+    """Split timestamps into multiple features"""
 
     @property
     def name(self):
@@ -127,7 +135,10 @@ class DateTimeInfo(FeatureGenerator):
 
 
 class ZipCodeInfo(FeatureGenerator):
-    """Generates new features from a zipcode"""
+    """Generates new features from a zipcode
+
+    Searches zip codes and creates columns for state, county, city, latitude, longitude and time zone
+    """
 
     @property
     def name(self):
@@ -144,7 +155,7 @@ class ZipCodeInfo(FeatureGenerator):
         :param data: dataframe containing zip codes
         :param column: column label containing zip codes
         :param kwargs: ignored
-        :return: dataframe with new columns for county, city, latitude and longitude
+        :return: dataframe with new columns for state, county, city, latitude, longitude and time zone
         """
 
         if column is None:
