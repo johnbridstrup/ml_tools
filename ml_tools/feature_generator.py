@@ -56,7 +56,7 @@ class FeatureGenerator(ABC):
         :return: Pandas dataframe with new or transformed features
         :rtype: pandas.DataFrame
         """
-        pass
+        raise NotImplementedError('generate_feature not implemented')
 
 
 class Hour(FeatureGenerator):
@@ -99,8 +99,7 @@ class Hour(FeatureGenerator):
                     data[column][index] = time.hour
             except AttributeError:
                 data[column] = pd.to_datetime(data[column])
-                for index, time in data[
-                    column].iteritems():  # No idea why i need iteritems here but not in the other loop
+                for index, time in data[column].iteritems():
                     data[column][index] = time.hour
             return data
 
@@ -292,7 +291,7 @@ class Aggregator(ABC):
     @abstractmethod
     def aggregate(self):
         """Aggregates data stored in class"""
-        pass
+        raise NotImplementedError('aggregate not implemented')
 
     def new_relationship(self, rkey1, rkey2):
         """Defines the relationship between data1 and data2

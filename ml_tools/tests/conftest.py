@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 import seaborn as sns
 
+
 @pytest.fixture
 def single_dataset():
     df = pd.DataFrame({"animal": ["dog", "cat", "monkey"],
@@ -30,6 +31,12 @@ def timestamps():
 
 
 @pytest.fixture
+def timestamps_string():
+    df = pd.read_csv('data/ml_tools_multiiple_tables_dataset/customers.csv')
+    return df
+
+
+@pytest.fixture
 def zipcodes():
     df = pd.DataFrame({'zip_code': [90293, 20186]})
     return df
@@ -39,6 +46,7 @@ def zipcodes():
 def user_test_func():
     def t_func(data, column):
         return data
+
     return t_func
 
 

@@ -8,14 +8,21 @@ from ml_tools import FeatureGenerator, \
     SingleAggregator, \
     Average, \
     DateTimeInfo, \
-    ZipCodeInfo
+    ZipCodeInfo, \
+    Aggregator
 import pandas as pd
 
 
-def test_not_implemented():
+def test_not_implemented(single_dataset):
     with pytest.raises(TypeError, match="Can't instantiate abstract class FeatureGenerator with abstract methods "
                                         "generate_feature"):
         FeatureGenerator()
+
+    df = single_dataset
+    with pytest.raises(NotImplementedError, match='generate_feature not implemented'):
+        FeatureGenerator.__abstractmethods__ = frozenset()
+        feat_gen = FeatureGenerator()
+        feat_gen.generate_feature(df)
 
 
 def test_hour(timestamps):
@@ -30,6 +37,18 @@ def test_hour(timestamps):
     assert new_feature.equals(df_comp)
     assert Hour.name == 'Hour'
     assert Hour.feature_type == 'transformation'
+
+
+def test_hour_strings(timestamps_string):
+    df1 = timestamps_string
+
+    df2 = df1.copy()
+    df2['join_date'] = pd.to_datetime(df2['join_date'])
+
+    new_feature = Hour.generate_feature(df1, column='join_date')
+    compare_feature = Hour.generate_feature(df2, column='join_date')
+
+    assert new_feature.equals(compare_feature)
 
 
 def test_hour_columns(timestamps):
@@ -55,6 +74,17 @@ def test_split_timestamp(timestamps):
     assert all([d1 == d2 for d1, d2 in zip(df['timestamp'].dt.time, split_time['timestamp_time'])])
     assert DateTimeInfo.name == 'datetime_info'
     assert DateTimeInfo.feature_type == 'generation'
+
+def test_split_timestamp_string(timestamps_string):
+    df1 = timestamps_string
+
+    df2 = df1.copy()
+    df2['join_date'] = pd.to_datetime(df2['join_date'])
+
+    test_feature = DateTimeInfo.generate_feature(df1, 'join_date')
+    compare_feature = DateTimeInfo.generate_feature(df2, 'join_date')
+
+    assert test_feature.equals(compare_feature)
 
 
 def test_split_timestamp_no_col(timestamps):
@@ -112,6 +142,15 @@ def test_custom_feature_generator(user_test_func, single_dataset):
     new_feature = test_generator.generate_feature(df)
 
     assert new_feature.equals(df)
+
+
+def test_aggregate_abstract(single_dataset):
+    Aggregator.__abstractmethods__ = frozenset()
+    df = single_dataset
+    agg = Aggregator(df)
+
+    with pytest.raises(NotImplementedError, match='aggregate not implemented'):
+        agg.aggregate()
 
 
 def test_simple_aggregator_init(multi_dataset):
@@ -217,3 +256,18 @@ def test_average(test_dataset):
     df_avg = agg.aggregate()
 
     assert df_avg.equals(df_comp)
+
+
+def test_not_implemented_errors():
+    class TestGenerator(FeatureGenerator):
+        @classmethod
+        def generate_feature(cls, data, column=None, **kwargs):
+            return 0
+
+    assert TestGenerator.generate_feature("test") == 0
+
+    with pytest.raises(NotImplementedError, match='Name property is not implemented'):
+        TestGenerator.name
+
+    with pytest.raises(NotImplementedError, match='feature_type property is not implemented'):
+        TestGenerator.feature_type
