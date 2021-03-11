@@ -1,0 +1,22 @@
+transactions:
+    transaction_id: Primary Key
+    session_id: Foreign Key
+    transaction_time: Datetime
+    amount: Numeric
+    product_id: Foreign Key
+
+products:
+    product_id: Primary Key
+    brand: Categorical
+
+sessions:
+    session_id: Primary Key
+    customer_id: Foreign Key
+    device: Categorical
+    session_start: Datetime
+
+customers:
+    customer_id: Primary Key
+    join_date: Datetime
+    date_of_birth: Datetime
+    zip_code: ZIPCode
