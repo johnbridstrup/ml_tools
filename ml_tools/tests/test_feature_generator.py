@@ -1,5 +1,6 @@
 import pytest
 from uszipcode import SearchEngine
+import numpy as np
 
 from ml_tools import FeatureGenerator, \
     Hour, \
@@ -74,6 +75,7 @@ def test_split_timestamp(timestamps):
     assert all([d1 == d2 for d1, d2 in zip(df['timestamp'].dt.time, split_time['timestamp_time'])])
     assert DateTimeInfo.name == 'datetime_info'
     assert DateTimeInfo.feature_type == 'generation'
+
 
 def test_split_timestamp_string(timestamps_string):
     df1 = timestamps_string
@@ -271,3 +273,13 @@ def test_not_implemented_errors():
 
     with pytest.raises(NotImplementedError, match='feature_type property is not implemented'):
         TestGenerator.feature_type
+
+
+def test_hour_nan(timestamps):
+    df = timestamps
+
+    df.timestamp.iloc[0] = np.nan
+
+    hours = Hour.generate_feature(df)
+
+    assert pd.isnull(hours.timestamp.iloc[0])
